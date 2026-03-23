@@ -1,0 +1,377 @@
+#!/bin/bash
+# ctl — manage a Playground+ server stack (angel + talker + proxy + intercom)
+# Tony Mattke aka tonhe 
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+ANGEL_BIN="$SCRIPT_DIR/angel"
+ANGEL_PIDFILE="$PROJECT_DIR/junk/ANGEL_PID"
+TALKER_PIDFILE="$PROJECT_DIR/junk/PID"
+ALIVE_SOCKET="$PROJECT_DIR/junk/alive_socket"
+CONFIG="$PROJECT_DIR/soft/config.msg"
+LOG_DIR="$PROJECT_DIR/logs"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# Detect whether this talker has proxy support
+# Check autoconfig.h first (compile-time config), fall back to binary check
+HAS_PROXY=0
+AUTOCONFIG="$PROJECT_DIR/src/include/autoconfig.h"
+if [ -f "$AUTOCONFIG" ] && grep -q '^#define HAVE_PROXY' "$AUTOCONFIG" 2>/dev/null; then
+    HAS_PROXY=1
+elif [ -x "$SCRIPT_DIR/proxy" ]; then
+    HAS_PROXY=1
+fi
+
+SCRIPT_NAME=$(basename "$0")
+
+usage() {
+    echo ""
+    echo "  $SCRIPT_NAME — Playground+ server management"
+    echo ""
+    echo "  Usage: $SCRIPT_NAME <command>"
+    echo ""
+    echo "  Commands:"
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        echo "    start     Start the server stack (angel + proxy + talker)"
+    else
+        echo "    start     Start the server stack (angel + talker)"
+    fi
+    echo "    stop      Stop everything gracefully"
+    echo "    restart   Full restart (stop + start, disconnects everyone)"
+    echo "    status    Show running processes and uptime"
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        echo "    reboot    Seamless talker reboot (no disconnects, proxy stays)"
+    else
+        echo "    reboot    Seamless talker reboot via angel"
+    fi
+    echo "    log       Tail a log file (angel|error|boot|connection|intercom)"
+    echo ""
+    echo "  The angel watchdog monitors the talker and restarts it"
+    echo "  automatically if it crashes."
+    echo ""
+    exit 1
+}
+
+# --- PID helpers ---
+
+get_pid_from_file() {
+    local pidfile="$1"
+    if [ -f "$pidfile" ]; then
+        local pid=$(cat "$pidfile" 2>/dev/null | tr -d '[:space:]')
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+find_process_pid() {
+    local name="$1"
+    for pid in $(pgrep -x "$name" 2>/dev/null); do
+        local cwd=$(readlink -f "/proc/$pid/cwd" 2>/dev/null)
+        if [ "$cwd" = "$PROJECT_DIR" ]; then
+            echo "$pid"
+            return 0
+        fi
+    done
+    return 1
+}
+
+find_proxy_pid() {
+    for pid in $(pgrep -x proxy 2>/dev/null); do
+        local cwd=$(readlink -f "/proc/$pid/cwd" 2>/dev/null)
+        if [ "$cwd" = "$PROJECT_DIR" ]; then
+            echo "$pid"
+            return 0
+        fi
+    done
+    return 1
+}
+
+find_intercom_pid() {
+    for pid in $(pgrep -x intercom 2>/dev/null); do
+        if [ -d "/proc/$pid" ]; then
+            local exe=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
+            # Handle "(deleted)" suffix after binary rebuild
+            exe="${exe% (deleted)}"
+            if [ "$exe" = "$PROJECT_DIR/bin/intercom" ]; then
+                echo "$pid"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+# --- Kill with verification ---
+
+kill_and_verify() {
+    local pid=$1
+    local name=$2
+
+    echo -n "  Stopping $name (pid $pid)..."
+    kill "$pid" 2>/dev/null
+
+    for i in $(seq 1 5); do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo -e " ${GREEN}stopped${NC}."
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo -n " force killing..."
+    kill -9 "$pid" 2>/dev/null
+    sleep 1
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+        echo -e " ${GREEN}stopped${NC}."
+        return 0
+    else
+        echo -e " ${RED}FAILED${NC}!"
+        return 1
+    fi
+}
+
+# --- Commands ---
+
+do_start() {
+    local angel_pid=$(get_pid_from_file "$ANGEL_PIDFILE")
+    if [ -n "$angel_pid" ]; then
+        echo "Angel is already running (pid $angel_pid)"
+        exit 1
+    fi
+
+    # Clean up orphaned processes
+    local orphans=0
+    local opid
+    opid=$(find_process_pid "talker")
+    if [ -n "$opid" ]; then
+        kill_and_verify "$opid" "orphaned talker"
+        orphans=1
+    fi
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        opid=$(find_proxy_pid)
+        if [ -n "$opid" ]; then
+            kill_and_verify "$opid" "orphaned proxy"
+            orphans=1
+        fi
+    fi
+    opid=$(find_intercom_pid)
+    if [ -n "$opid" ]; then
+        kill_and_verify "$opid" "orphaned intercom"
+        orphans=1
+    fi
+    [ "$orphans" -eq 1 ] && sleep 1
+
+    # Clean stale socket files
+    rm -f "$ALIVE_SOCKET"
+
+    if [ ! -x "$ANGEL_BIN" ]; then
+        echo "Angel binary not found: $ANGEL_BIN"
+        exit 1
+    fi
+
+    echo "Starting angel..."
+    cd "$PROJECT_DIR"
+    nohup "$ANGEL_BIN" > /dev/null 2>&1 &
+    sleep 3
+
+    angel_pid=$(get_pid_from_file "$ANGEL_PIDFILE")
+    if [ -n "$angel_pid" ]; then
+        echo -e "  ${GREEN}Started.${NC}"
+        echo ""
+        do_status
+    else
+        echo -e "  ${RED}Angel failed to start.${NC} Check logs/angel.log"
+        exit 1
+    fi
+}
+
+do_stop() {
+    local stopped=0
+
+    # Stop angel first (prevents it from restarting things we kill)
+    local angel_pid=$(get_pid_from_file "$ANGEL_PIDFILE")
+    [ -z "$angel_pid" ] && angel_pid=$(find_process_pid "angel")
+    if [ -n "$angel_pid" ]; then
+        kill_and_verify "$angel_pid" "angel"
+        rm -f "$ANGEL_PIDFILE"
+        stopped=1
+    fi
+
+    # Stop proxy (if present)
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        local proxy_pid=$(find_proxy_pid)
+        if [ -n "$proxy_pid" ]; then
+            kill_and_verify "$proxy_pid" "proxy"
+            stopped=1
+        fi
+    fi
+
+    # Stop talker
+    local talker_pid=$(get_pid_from_file "$TALKER_PIDFILE")
+    [ -z "$talker_pid" ] && talker_pid=$(find_process_pid "talker")
+    if [ -n "$talker_pid" ]; then
+        kill_and_verify "$talker_pid" "talker"
+        stopped=1
+    fi
+
+    # Stop intercom
+    local intercom_pid=$(find_intercom_pid)
+    if [ -n "$intercom_pid" ]; then
+        kill_and_verify "$intercom_pid" "intercom"
+        stopped=1
+    fi
+
+    if [ "$stopped" -eq 0 ]; then
+        echo "Nothing is running."
+    else
+        # Clean up
+        rm -f "$ALIVE_SOCKET"
+
+        # Final verification
+        sleep 1
+        local remaining=0
+        for name in talker intercom; do
+            local rpid=$(find_process_pid "$name" 2>/dev/null)
+            if [ -n "$rpid" ]; then
+                echo -e "  ${RED}WARNING: $name (pid $rpid) still alive!${NC}"
+                remaining=1
+            fi
+        done
+        if [ "$HAS_PROXY" -eq 1 ]; then
+            local rpid=$(find_proxy_pid 2>/dev/null)
+            if [ -n "$rpid" ]; then
+                echo -e "  ${RED}WARNING: proxy (pid $rpid) still alive!${NC}"
+                remaining=1
+            fi
+        fi
+        [ "$remaining" -eq 0 ] && echo -e "  ${GREEN}All stopped.${NC}"
+    fi
+}
+
+do_status() {
+    local port=$(grep "^port" "$CONFIG" 2>/dev/null | head -1 | cut -f2- | tr -d '[:space:]')
+
+    echo "Playground+ — Process Status"
+    echo "============================"
+    if [ "$HAS_PROXY" -eq 1 ] && [ -n "$port" ]; then
+        echo -e "  ${CYAN}Public port: $port  |  Talker port: $((port + 1))${NC}"
+    elif [ -n "$port" ]; then
+        echo -e "  ${CYAN}Port: $port${NC}"
+    fi
+    echo ""
+
+    # Angel — try PID file first, fall back to pgrep + cwd
+    local angel_pid=$(get_pid_from_file "$ANGEL_PIDFILE")
+    [ -z "$angel_pid" ] && angel_pid=$(find_process_pid "angel")
+    if [ -n "$angel_pid" ]; then
+        local uptime=$(ps -p "$angel_pid" -o etime --no-headers 2>/dev/null | tr -d ' ')
+        printf "  %-12s ${GREEN}running${NC}  (pid %-6s up %s)\n" "angel" "$angel_pid" "$uptime"
+    else
+        printf "  %-12s ${RED}stopped${NC}\n" "angel"
+    fi
+
+    # Proxy (if present)
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        local proxy_pid=$(find_proxy_pid)
+        if [ -n "$proxy_pid" ]; then
+            local uptime=$(ps -p "$proxy_pid" -o etime --no-headers 2>/dev/null | tr -d ' ')
+            local mem=$(ps -p "$proxy_pid" -o rss --no-headers 2>/dev/null | tr -d ' ')
+            printf "  %-12s ${GREEN}running${NC}  (pid %-6s up %s, %sK)\n" "proxy" "$proxy_pid" "$uptime" "$mem"
+        else
+            printf "  %-12s ${RED}stopped${NC}\n" "proxy"
+        fi
+    fi
+
+    # Talker — try PID file first, fall back to pgrep + cwd
+    local talker_pid=$(get_pid_from_file "$TALKER_PIDFILE")
+    [ -z "$talker_pid" ] && talker_pid=$(find_process_pid "talker")
+    if [ -n "$talker_pid" ]; then
+        local uptime=$(ps -p "$talker_pid" -o etime --no-headers 2>/dev/null | tr -d ' ')
+        local mem=$(ps -p "$talker_pid" -o rss --no-headers 2>/dev/null | tr -d ' ')
+        printf "  %-12s ${GREEN}running${NC}  (pid %-6s up %s, %sK)\n" "talker" "$talker_pid" "$uptime" "$mem"
+    else
+        printf "  %-12s ${RED}stopped${NC}\n" "talker"
+    fi
+
+    # Intercom — pgrep + exe match
+    local intercom_pid=$(find_intercom_pid)
+    if [ -n "$intercom_pid" ]; then
+        local uptime=$(ps -p "$intercom_pid" -o etime --no-headers 2>/dev/null | tr -d ' ')
+        printf "  %-12s ${GREEN}running${NC}  (pid %-6s up %s)\n" "intercom" "$intercom_pid" "$uptime"
+    else
+        printf "  %-12s ${RED}stopped${NC}\n" "intercom"
+    fi
+
+    echo ""
+
+    # Sockets
+    if [ -S "$ALIVE_SOCKET" ]; then
+        printf "  alive_socket:  ${GREEN}exists${NC}\n"
+    else
+        printf "  alive_socket:  ${YELLOW}missing${NC}\n"
+    fi
+}
+
+do_reboot() {
+    local talker_pid=$(get_pid_from_file "$TALKER_PIDFILE")
+    [ -z "$talker_pid" ] && talker_pid=$(find_process_pid "talker")
+    if [ -z "$talker_pid" ]; then
+        echo "Talker is not running."
+        exit 1
+    fi
+
+    echo "Sending SIGHUP for seamless reboot (talker pid $talker_pid)..."
+    kill -HUP "$talker_pid"
+    if [ "$HAS_PROXY" -eq 1 ]; then
+        echo -e "  Reboot signal sent. ${CYAN}Proxy stays running — all sessions preserved.${NC}"
+    else
+        echo -e "  Reboot signal sent. ${CYAN}Angel will restart the talker.${NC}"
+    fi
+}
+
+do_log() {
+    local target="${1:-angel}"
+    local logfile
+
+    case "$target" in
+        angel)      logfile="$LOG_DIR/angel.log" ;;
+        error)      logfile="$LOG_DIR/error.log" ;;
+        boot)       logfile="$LOG_DIR/boot.log" ;;
+        connection) logfile="$LOG_DIR/connection.log" ;;
+        proxy)      logfile="$LOG_DIR/proxy.log" ;;
+        ssh)        logfile="$LOG_DIR/ssh.log" ;;
+        tls)        logfile="$LOG_DIR/tls.log" ;;
+        intercom)   logfile="$LOG_DIR/intercom.log" ;;
+        *)          logfile="$LOG_DIR/$target.log" ;;
+    esac
+
+    if [ -f "$logfile" ]; then
+        tail -f "$logfile"
+    else
+        echo "Log file not found: $logfile"
+        echo ""
+        echo "Available logs:"
+        ls "$LOG_DIR"/*.log 2>/dev/null | xargs -n1 basename | sed 's/\.log$//' | sort | column
+    fi
+}
+
+# --- Main ---
+
+case "${1:-}" in
+    start)   do_start ;;
+    stop)    do_stop ;;
+    restart) do_stop; sleep 1; do_start ;;
+    status)  do_status ;;
+    reboot)  do_reboot ;;
+    log)     do_log "$2" ;;
+    *)       usage ;;
+esac

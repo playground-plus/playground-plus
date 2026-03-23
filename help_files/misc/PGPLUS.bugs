@@ -1,0 +1,44 @@
+
+ Playground+ bugs
+ ----------------
+
+First let me set one thing straight - Playground Plus is *not* 100% bug
+free. If I claimed that then I'd be stupid, however it won't fall over due
+to silly little things.
+
+As from 1.0.10 Playground Plus is now unsupported. Why? Well to be honest
+there is far too many talkers around these days which show little or no
+imaginitivity run by admins who have no idea what they are doing and
+"coders" who haven't touched the code at all or have modified a few things
+willy-nilly and then blamed me when it all falls apart.
+
+There also seems to be far too many people out there who, despite getting
+hold of many hours worth of coding effort take it upon themselves to
+deliberately break the licence conditions (such as removing credits) in an
+effort to make the code look a little less out of the box. My message to
+those is that if you don't like free code, start from the beginning
+yourself and then you can credit whoever you like.
+
+Coupled with people assuming that my talker is a drop in pg+ helpdesk
+(which it is not) and harassing residents and staff for help, sites or
+whatever and those who seek to take the code, make a few modifications and
+pass it off as their own, maintaining a basecode becomes less appealing.
+
+Of course, not all talkers are like this. But unfortuntely frequent pg+
+revisions gave people the ability to ride on the updates without actually
+coding anything for themselves and has lead to a very large number of base
+talkers (sometimes not even configured properly) run by people who know
+nothing about the code.
+
+Thats why I've thrown in the towel. PG+ won't be around forever. To be
+honest a lot of the code is shoddy and nothing short of a rewrite will
+manage to fix it. But now that everyone and his dog seems to be writing a
+basecode that will "kick pg+'s ass" I'm sure that one day we'll all be
+using something else.
+
+However, I would finally like to thank those dedicated individuals who
+have helped shape pg+ into what it is today (be it code or testing). You
+know who you are.
+
+	Richard Lawrence
+	26th September 1999

@@ -1,0 +1,245 @@
+//
+// Playground Plus Makefile Template
+// --------------------------------
+//
+// This is the makefile template for Playground Plus, should you wish to
+// modify your Makefile then you should edit THIS file and then run
+// "make newos" to install it.
+//
+// *MF_DATE*, *MF_OS*, *MF_AUTHOR*, *MF_OS_CFLAGS*, *MF_OTHER_CFLAGS* and
+// *MF_LIBS* will be replaced with the appropriate values depending upon
+// your operating system (which will be determined by "make newos")
+//
+// All lines starting with // will not be included in the final Makefile
+//
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// 
+#
+# PLAYGROUND PLUS MAKEFILE
+# (based around the replacement makefile for PG96 by Spire)
+#
+#    Makefile date : *MF_DATE*
+#    Makefile OS   : *MF_OS*
+#    Porting by    : *MF_AUTHOR*
+#
+# ========================================================================
+#
+#   To disable an option, comment it out with a # like so
+#
+#      OPTION = 1                   <---- This is enabled
+#      #OPTION = 1                  <---- This is disabled
+#
+#
+#  Options:
+#
+#  Defining DEBUGGING will include flags for the debugging of your talker.
+#  It increases the size of the executable slightly and is handy when you
+#  want to debug a core file. If disk/memory space is at a premium you
+#  can always turn it off.
+#
+
+#DEBUGGING = 1
+
+#
+#  Defining USE_LIBG will link in an extra static C library IF AND ONLY
+#  IF "DEBUGGING" is defined. This increases the size of the binary
+#  substantially more and provides better debug support.
+#
+#  This is NOT recommended for running a live talker with. If you boot up
+#  your code using this then you will be warned both on boot-up and in
+#  your 'version' command.
+#
+
+USE_LIBG = 1
+
+#
+#  Defining VERBOSE_MODE will cause the talker to log a large amount of
+#  additional information IF AND ONLY IF "DEBUGGING" is defined. This may be
+#  handy in cases of problem code which is difficult to debug.
+#
+
+#VERBOSE_MODE = 1
+
+#
+#  Defining STRIP will run the unix "strip" command on the final executables
+#  which removes any unecessary symbols IF AND ONLY IF "DEBUGGING" is undefined.
+#
+#  If your live code is going to run without any debugging symbols then
+#  this is recommended since it reduces the size of the binaries by at least
+#  60k. It should really only be disabled if your system doesn't support
+#  the "strip" command.
+#
+
+STRIP = 1
+
+#
+# These are the locations of the binaries. You probably won't need or want
+# to change these.
+#
+
+TALKER			= talker
+ANGEL			= angel
+IDENT			= ident_server
+INTERCOM		= intercom
+CC			= gcc
+BIN			= ../bin
+OBJECT_LOCATION		= ../junk
+PERMS			= 700
+
+#
+# Specific flags according to your operating system
+#
+
+OS_SPECIFIC_CFLAGS	= *MF_OS_CFLAGS*
+OS_SPECIFIC_LIBS	= *MF_LIBS*
+
+#
+# The objects that need to be linked to make the TALKER executable ONLY.
+# These are automatically worked out by "make depend"
+
+include .Makefile_objects
+	  
+#
+# If you start editing stuff below here you better know what you are doing!
+# ==========================================================================
+#
+
+#
+# Set up compilation flags
+#
+
+ifdef DEBUGGING
+CFLAGS	= -g3 -ggdb -Wall -Winline -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wnested-externs -Wno-cast-align
+LDFLAGS	= -g
+ifdef USE_LIBG
+LIBS	=
+CFLAGS	+= -DDEBUGGING -ggdb
+endif
+ifdef VERBOSE_MODE
+CFLAGS	+= -DDEBUG_VERBOSE
+endif
+else
+CFLAGS	= -O3 -Wall -Winline -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wnested-externs -Wno-cast-align
+LIBS	= 
+LDFLAGS	=
+endif
+
+CFLAGS	+= -Wno-pointer-arith -fcommon $(OS_SPECIFIC_CFLAGS) -DTALKER_EXEC=\"$(TALKER)\" *MF_OTHER_CFLAGS*
+LIBS	+= $(OS_SPECIFIC_LIBS)
+
+#
+# Defaults
+#
+
+ifneq ($(wildcard include/autoconfig.h),include/autoconfig.h)
+default:        config
+install:        config
+quick:		config
+else   
+default:        all
+install:        setup
+quick:		server
+endif
+
+#
+# Options and actions
+#
+
+ifndef DEBUGGING
+ifdef STRIP
+all: $(TALKER) $(ANGEL) $(IDENT) $(INTERCOM) strip
+else
+all: $(TALKER) $(ANGEL) $(IDENT) $(INTERCOM)
+endif
+else
+all: $(TALKER) $(ANGEL) $(IDENT) $(INTERCOM)
+endif
+
+server:	$(TALKER)
+	@mv $(TALKER) $(BIN)/$(TALKER)
+	@chmod $(PERMS) $(BIN)/$(TALKER)
+	@echo "Made quick."
+	
+$(TALKER):	broadcast version $(OBJECTS) Makefile
+	@echo "Now linking ...... talk server"
+	@$(CC) $(LDFLAGS) -o $(TALKER) $(OBJECTS) $(LIBS)
+
+$(ANGEL):	angel.c Makefile xstring.c
+	@echo "Now compiling .... guardian angel"
+	@$(CC) $(CFLAGS) $(DEFS) -o $(ANGEL) angel.c $(LIBS)
+
+$(IDENT):	ident_server.c include/ident.h Makefile
+	@echo "Now compiling .... ident server"
+	@$(CC) $(CFLAGS) $(DEFS) -o $(IDENT) ident_server.c $(LIBS)
+
+$(INTERCOM):	intercom.c include/intercom.h
+	@echo "Now compiling .... intercom server"
+	@$(CC) $(CFLAGS) $(DEFS) -o $(INTERCOM) intercom.c $(LIBS)
+
+version:
+	@echo "#define COMPILE_TIME \"`date`\"" > include/version.h
+	@echo "#define UNAME \"`uname`\"" >> include/version.h
+	@bash configure/get_dir
+	
+broadcast:
+	@echo ""
+	@echo "Using OS specific flags : $(OS_SPECIFIC_CFLAGS)"
+	@echo "Using additional libs   : $(LIBS) $(LDFLAGS)"
+        
+strip:
+	@echo "Now stripping .... $(TALKER) binary"
+	@strip $(TALKER)
+	@echo "Now stripping .... $(ANGEL) binary"
+	@strip $(ANGEL)
+	@echo "Now stripping .... $(IDENT) binary"
+	@strip $(IDENT)
+	@echo "Now stripping .... $(INTERCOM) binary"
+	@strip $(INTERCOM)
+
+setup:  all
+	@echo "Now installing ... $(TALKER) binary"
+	@mv $(TALKER) $(BIN)/$(TALKER)
+	@chmod $(PERMS) $(BIN)/$(TALKER)
+	@echo "Now installing ... $(ANGEL) binary"
+	@mv $(ANGEL) $(BIN)/$(ANGEL)
+	@chmod $(PERMS) $(BIN)/$(ANGEL)
+	@echo "Now installing ... $(IDENT) binary"
+	@mv $(IDENT) $(BIN)/$(IDENT)
+	@chmod $(PERMS) $(BIN)/$(IDENT)
+	@echo "Now installing ... $(INTERCOM) binary"
+	@mv $(INTERCOM) $(BIN)/$(INTERCOM)
+	@chmod $(PERMS) $(BIN)/$(INTERCOM)
+	@echo "Made install."
+
+clean:
+	@echo "Deleting compilation output and dependencies"
+	@-rm -f $(TALKER) $(ANGEL) $(IDENT) $(INTERCOM) $(OBJECTS) ../junk/*
+
+purge vclean:
+	@echo "Deleting old logs, scripts, reports and emergency files"
+	@-rm -f ../reports/* ../logs/*.log ../logs/scripts/* ../logs/scripts/.??* ../logs/emergency/* ../logs/emergency/.??*
+
+scrub:	clean purge
+	@echo "Deleting players, notes, defrag, rooms and binaries"
+	@-rm -f ../files/players/* ../files/notes/* ../files/defrag/* ../files/rooms/* ../files/items/* ../files/socials/* ../files/intercom.dbase $(BIN)/$(TALKER) $(BIN)/$(ANGEL) $(BIN)/$(IDENT) $(BIN)/$(INTERCOM)
+	@-rm -rf ../files/news/*
+
+$(OBJECT_LOCATION)/%.o:	include/config.h include/player.h include/autoconfig.h Makefile include/proto.h include/robot_player.h include/root.h
+	@printf "Now compiling .... %-15s\t%s lines \n" $*.c "`wc -l < $*.c`"
+	@$(CC) $(CFLAGS) $(DEFS) -c $*.c -o $(OBJECT_LOCATION)/$*.o
+
+newos:
+	@bash configure/setup
+	@bash configure/create_objects "*MF_OS_CFLAGS* *MF_OTHER_CFLAGS*"
+
+config:
+	@bash configure/configure_code
+
+depend:
+	@bash configure/create_objects "*MF_OS_CFLAGS* *MF_OTHER_CFLAGS*"
+
+#
+# Dependancies (automatically worked out by "make depend")
+#
+
+include .depend

@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Simple script to boot the talker. Place this in your cron tab to
+# be executed every ten minutes or so and if your server is rebooted then
+# your talker will be started up without you having to do it manually
+#
+# Original script by Grim
+# Written from scratch for pg+ by Silver
+
+# You'll need to change this if your talker files are in a different
+# place to the standard ~/pgplus
+
+cd ~/pgplus
+
+# The name of the log
+
+LOGFILE="boot-script.log"
+
+# You won't need to change anything below!
+# ========================================================================
+
+# What port do we run on?
+
+port=`grep "^port" soft/config.msg | cut -f2-`
+
+# Find out the status of the angel
+
+if [ -z "`ps x | grep "Angel" | grep $port`" ]
+then
+  angel_up=0
+else
+  angel_up=1
+fi
+
+# Find out the status of the talker
+
+if [ -z "`ps x | grep "Talk Server" | grep $port`" ]
+then
+  talker_up=0
+else
+  talker_up=1
+fi
+
+# check if both are up
+
+if [ "$angel_up" = "1" -a "$talker_up" = "1" ]
+then
+  exit
+fi
+
+# check if both are down
+
+if [ "$angel_up" = "0" -a "$talker_up" = "0" ]
+then
+  bin/angel &
+  exit
+fi
+
+# send an error message
+
+if [ "$angel_up" = "1" ]
+then
+  ermsg="`date +"%H:%M:%S - %d/%m/%Y"` - Unable to boot talker (angel is running)"
+else
+  ermsg="`date +"%H:%M:%S - %d/%m/%Y"` - Unable to boot talker (talk server is running)"
+fi
+
+echo "$ermsg" >>logs/$LOGFILE
+
+
+
+
+
+
+

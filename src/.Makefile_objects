@@ -1,0 +1,45 @@
+#
+# Makefile objects created automatically
+# DO NOT EDIT
+#
+OBJECTS = $(OBJECT_LOCATION)/admin2.o \
+          $(OBJECT_LOCATION)/admin.o \
+          $(OBJECT_LOCATION)/aliases.o \
+          $(OBJECT_LOCATION)/channel.o \
+          $(OBJECT_LOCATION)/commands.o \
+          $(OBJECT_LOCATION)/comm_stats.o \
+          $(OBJECT_LOCATION)/dsc.o \
+          $(OBJECT_LOCATION)/dynamic.o \
+          $(OBJECT_LOCATION)/dynatext.o \
+          $(OBJECT_LOCATION)/editor.o \
+          $(OBJECT_LOCATION)/examine.o \
+          $(OBJECT_LOCATION)/gag.o \
+          $(OBJECT_LOCATION)/games.o \
+          $(OBJECT_LOCATION)/globals.o \
+          $(OBJECT_LOCATION)/glue.o \
+          $(OBJECT_LOCATION)/history.o \
+          $(OBJECT_LOCATION)/ident_client.o \
+          $(OBJECT_LOCATION)/intercom_glue.o \
+          $(OBJECT_LOCATION)/items.o \
+          $(OBJECT_LOCATION)/last.o \
+          $(OBJECT_LOCATION)/lists.o \
+          $(OBJECT_LOCATION)/mail.o \
+          $(OBJECT_LOCATION)/multi.o \
+          $(OBJECT_LOCATION)/news.o \
+          $(OBJECT_LOCATION)/output.o \
+          $(OBJECT_LOCATION)/parse.o \
+          $(OBJECT_LOCATION)/plists.o \
+          $(OBJECT_LOCATION)/reboot.o \
+          $(OBJECT_LOCATION)/room.o \
+          $(OBJECT_LOCATION)/session.o \
+          $(OBJECT_LOCATION)/shortcut.o \
+          $(OBJECT_LOCATION)/slots.o \
+          $(OBJECT_LOCATION)/socials.o \
+          $(OBJECT_LOCATION)/socket.o \
+          $(OBJECT_LOCATION)/softmsg.o \
+          $(OBJECT_LOCATION)/spodlist.o \
+          $(OBJECT_LOCATION)/tag.o \
+          $(OBJECT_LOCATION)/talking.o \
+          $(OBJECT_LOCATION)/ttt.o \
+          $(OBJECT_LOCATION)/version.o \
+          $(OBJECT_LOCATION)/xstring.o \
