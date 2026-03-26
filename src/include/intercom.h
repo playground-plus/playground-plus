@@ -11,7 +11,7 @@
 #include "player.h"
 #endif
 
-#define INTERCOM_VERSION "2026.1.0"
+#define INTERCOM_VERSION "1.2.0"
 #define INTERCOM_STACK 20480
 
 #define COLOUR_TERMINATOR "^N"
