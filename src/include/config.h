@@ -82,6 +82,9 @@
 #define WHO_IS_THAT        " No such person in saved files...\n"
 #define NOT_HERE_ATM       " That person isn't on right now...\n"
 
-/* Playground Plus version */
+/* Playground Plus version - This value should NOT be changed unless you
+   are specifically instructed to do so by an OFFICAL update patch file
+   from http://pgplus.ewtoo.org
+*/
 
-#define PG_VERSION "2026.1.0"
+#define PG_VERSION "1.0.11"
