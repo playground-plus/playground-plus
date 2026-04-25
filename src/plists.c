@@ -2339,7 +2339,8 @@ int check_password(char *password, char *entered, player * p)
     char key[9];
     strncpy(key, entered, 8);
     key[8] = '\0';
-    return (!strncmp(crypt(key, p->lower_name), password, 11));
+    result = crypt(key, p->lower_name);
+    return (result && !strncmp(result, password, 11));
   }
 }
 

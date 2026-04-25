@@ -932,7 +932,6 @@ void pg_log(char *filename, char *string)
 {
   int fd;
   int length;
-  char *oldstack = stack;
   char path[160];
   struct stat sbuf;
 
@@ -965,25 +964,9 @@ void pg_log(char *filename, char *string)
   if (strcasecmp(string, "bug") && strcasecmp(string, "idea"))
     if ((length + strlen(string)) > (max_log_size * 1024))
     {
-      lseek(fd, 0, SEEK_SET);	/* put file ptr back to beginning of file */
-      IGNORE_RET(read(fd, stack, length));	/* read it into stack */
-      close(fd);		/* close it */
+      close(fd);
       fd = open(path, (O_WRONLY | O_CREAT | O_TRUNC),
 		(S_IRUSR | S_IWUSR));
-      /* re-open, truncating it */
-
-      stack[length] = '\0';	/* make sure stack is NULL terminated */
-      stack += strlen(string);	/* advance stack ptr length of string */
-
-      while (*stack && *stack != '\n')
-	stack++;		/* advance stack to next newline */
-
-      if (*stack)
-      {
-	stack++;		/* advance past newline */
-	IGNORE_RET(write(fd, stack, strlen(stack)));
-      }
-      stack = oldstack;
     }
   sprintf(stack, "%s - %s\n", sys_time(), string);
   if (!(sys_flags & NO_PRINT_LOG))
