@@ -34,6 +34,13 @@
 *~
 .DS_Store
 Thumbs.db
+.claude/
+.cursor/
+.vscode/
+.private/
+.secret/
+.clangd
+.clangd-format
 
 # Project-specific data
 junk
