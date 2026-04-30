@@ -1,0 +1,73 @@
+# C build artifacts
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.lo
+*.la
+*.slo
+*.lai
+*.ko
+*.elf
+*.exe
+*.out
+*.app
+*.gch
+*.pch
+*.d
+
+# Debug / coverage
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.gcno
+*.gcda
+*.gcov
+
+# Editor / OS
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.claude/
+.cursor/
+.vscode/
+.private/
+.secret/
+.clangd
+.clangd-format
+
+# Project-specific data
+junk
+backup
+files/defrag
+files/items
+files/news
+files/notes
+files/players
+files/rooms
+files/stats_info
+
+# Platform-specific build config
+src/configure/makefiles/Darwin
+
+# Dotfiles in src (generated build metadata)
+src/.depend
+src/.files
+src/.Makefile_objects
+
+# Compiled binaries
+bin/angel
+bin/ident_server
+bin/intercom
+bin/talker
+
+# Per-machine build config (defaults live in Configure.defaults)
+src/configure/.config
+src/configure/.config.h
+src/configure/.config.old
