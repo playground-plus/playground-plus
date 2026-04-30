@@ -1,8 +1,11 @@
-Welcome to Playground+ 
+Welcome to Playground+
 
 Below is a list of additional things that have been added, bug fixed or
 changed since Playground v5.0.0 in no particular order:
 
+-- Version 2026.1.1 -- 30th of April 2026 ---------------------------------
+- security: HCAdmin login flow hardened
+  (see https://github.com/playground-plus/playground-plus/issues/2)
 -- Version 2026.1.0 -- 8th of February 2026 -------------------------------
 - builds cleanly on modern 64-bit Linux (GCC 13.3, glibc 2.39) with zero
   warnings across all four binaries (talker, angel, ident_server, intercom)

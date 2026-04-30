@@ -84,4 +84,4 @@
 
 /* Playground Plus version */
 
-#define PG_VERSION "2026.1.0"
+#define PG_VERSION "2026.1.1"
