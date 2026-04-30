@@ -230,7 +230,7 @@
 #define FROGGED			(1<<21)
 #define SCRIPTING		(1<<22)
 #define OFF_LSU			(1<<23)
-#define UNUSED			(1<<24)
+#define HC_AUTH			(1<<24)
 #define UNUSED2			(1<<25)
 #define WAITING_ENGAGE		(1<<26)
 #define ROBOT			(1<<27)

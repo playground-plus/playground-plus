@@ -24,6 +24,16 @@
 > [!NOTE]
 > This repository is not an official repository maintained by the original Playground+ developers. It is a community effort to modernize and preserve the PG+ codebase. The companion [playground-plus-patches](https://github.com/playground-plus/playground-plus-patches) repository is also unofficial.
 
+> [!CAUTION]
+> **Security bulletin — HCAdmin login flow**
+>
+> Two vulnerabilities affect talkers with HCAdmin names defined in `config.msg` that lack active pfiles:
+>
+> - **Unlimited password attempts** against the HC password challenge — no rate limiting or lockout.
+> - **HCAdmin privileges granted before password verification** — connecting clients are momentarily treated as HCAdmin before `check_hcadmin_pw` runs.
+>
+> Both are fixed in this release. Operators running prior or modified PG+ codebases should review the writeup and apply the patches: **[playground-plus#2](https://github.com/playground-plus/playground-plus/issues/2)**.
+
 **The classic talker server, modernized for 2026.**
 
 Playground Plus is a multi-user chat server ("talker") with a rich history stretching back to the early 1990s. Originally built on the EW-Too codebase, it evolved through Summink and Playground 96 into Playground+, which became one of the most widely deployed talker platforms of its era.
@@ -145,11 +155,11 @@ Playground+ 2026.1.0      Tony Mattke (tonhe)
 
 ## Credits
 
-### Playground Plus 
+### Playground Plus
 
 **Silver** (Richard Lawrence), **phypor** (J. Bradley Christian), and **blimey** (Geoffrey Swift) - the authors of Playground Plus, a stable, bug-fixed, and improved version of Playground 96 with a wealth of additional features.
 
-Sadly development stopped in 1998 at the height of talker population. 
+Sadly development stopped in 1998 at the height of talker population.
 
 ### Playground 96
 
