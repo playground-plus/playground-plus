@@ -1,0 +1,54 @@
+#
+# Playground Plus default configuration values.
+#
+# Read by configure/Configure (via sed + bash source) on first install
+# to populate prompt defaults. Once the operator has answered the
+# questions once, configure/.config takes precedence and this file is
+# ignored on subsequent runs.
+#
+# Format rules:
+#   - Lines must be valid sh syntax (the file is sourced by bash).
+#   - Use `KEY=y` to enable a boolean option.
+#   - Use `# KEY is not set` to disable; the script's sed pass converts
+#     this to `KEY=n` before sourcing.
+#   - Use `KEY=integer` for numeric options.
+#   - Lines starting with `#` (other than the "is not set" form) are
+#     treated as comments and ignored.
+#
+# Per-host concerns (operating system, install path, talker name, port,
+# HC password, etc.) are NOT set here — they're either auto-detected
+# by configure/setup and configure/get_dir, or live in soft/config.msg.
+#
+# Note that conditional options (MAX_CRASH, INTELLIBOTS, LAST_SHOW)
+# only appear in the menu when their parent option is enabled, but
+# their defaults are included here so that toggling the parent picks
+# up a sensible value.
+#
+
+#
+# Additional code options
+#
+INTERCOM=y
+ANTICRASH=y
+MAX_CRASH=3
+AUTOSHUTDOWN=y
+ROBOTS=y
+INTELLIBOTS=n
+LAST=y
+LAST_SHOW=20
+COMMAND_STATS=y
+NEWPAGER=y
+SEAMLESS_REBOOT=y
+COM_MATCH=y
+IDENT=y
+SUH_NUM=20
+NEW_RES_CODE=y
+ALLOW_MULTIS=y
+HC_CHANNEL=y
+NEW_RECONNECT=y
+
+#
+# Timing options (seconds; 1814400 = 3 weeks)
+#
+NEWS_TIMEOUT=1814400
+MAIL_TIMEOUT=1814400
