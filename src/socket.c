@@ -78,6 +78,76 @@ extern char *sprintf(char *, char *,...);
 int main_descriptor, alive_descriptor, oi_test;
 file banish_file, banish_msg, full_msg, splat_msg, under18_msg;
 
+/* lockout structure */
+typedef struct lock_struct {
+  char addr[MAX_INET_ADDR];
+  int fails;
+  time_t locked_until;
+  struct lock_struct *next;
+} lockout;
+
+lockout *lock_list = NULL;
+
+#define MAX_IP_FAILS 5
+#define LOCK_DURATION (10 * 60) /* 10 minutes */
+
+void add_ip_fail(char *addr)
+{
+  lockout *l;
+  for (l = lock_list; l; l = l->next)
+  {
+    if (!strcmp(l->addr, addr))
+    {
+      l->fails++;
+      if (l->fails >= MAX_IP_FAILS)
+        l->locked_until = time(0) + LOCK_DURATION;
+      return;
+    }
+  }
+  l = (lockout *)malloc(sizeof(lockout));
+  if (!l) return;
+  strncpy(l->addr, addr, MAX_INET_ADDR - 1);
+  l->addr[MAX_INET_ADDR - 1] = '\0';
+  l->fails = 1;
+  l->locked_until = 0;
+  l->next = lock_list;
+  lock_list = l;
+}
+
+int is_ip_locked(char *addr)
+{
+  lockout *l;
+  time_t now = time(0);
+  for (l = lock_list; l; l = l->next)
+  {
+    if (!strcmp(l->addr, addr))
+    {
+      if (l->locked_until > now) return 1;
+      if (l->locked_until > 0)
+      {
+        l->fails = 0;
+        l->locked_until = 0;
+      }
+      return 0;
+    }
+  }
+  return 0;
+}
+
+void clear_ip_fail(char *addr)
+{
+  lockout *l;
+  for (l = lock_list; l; l = l->next)
+  {
+    if (!strcmp(l->addr, addr))
+    {
+      l->fails = 0;
+      l->locked_until = 0;
+      return;
+    }
+  }
+}
+
 /* terminal defintitions
    NOTE: The incorrect vt100 and ansi definitions have been corrected
    here - cheers blimey! */
@@ -400,23 +470,11 @@ void init_socket(int port)
  */
 
   /* grab the main socket */
-
-  {
-    struct addrinfo hints, *res;
-    hostname = (char *) MALLOC(101);
-    memset(&main_socket, 0, sizeof(struct sockaddr_in));
-    gethostname(hostname, 100);
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if (getaddrinfo(hostname, NULL, &hints, &res) != 0 || !res)
-    {
-      handle_error("Error: Host machine does not exist!\n");
-    }
-    memcpy(&main_socket, res->ai_addr, sizeof(struct sockaddr_in));
-    freeaddrinfo(res);
-  }
+  memset(&main_socket, 0, sizeof(struct sockaddr_in));
+  main_socket.sin_family = AF_INET;
+  /* MACOS-FIX BEGIN: Use INADDR_ANY to bind to all interfaces instead of hostname resolution */
+  main_socket.sin_addr.s_addr = INADDR_ANY;
+  /* MACOS-FIX END */
   main_socket.sin_port = htons(port);
 
   main_descriptor = socket(AF_INET, SOCK_STREAM, IPROTO);
@@ -594,6 +652,14 @@ void accept_new_connection(void)
   if (new_socket < 0)
   {
     pg_log("error", "Error accepting new connection.");
+    return;
+  }
+
+  if (is_ip_locked(inet_ntoa(incoming.sin_addr)))
+  {
+    char lock_msg[] = "\nYour IP is currently locked out due to too many failed login attempts.\nPlease try again later.\n\n";
+    IGNORE_RET(write(new_socket, lock_msg, strlen(lock_msg)));
+    close(new_socket);
     return;
   }
 

@@ -1281,13 +1281,13 @@ int restore_player_title(player * p, char *name, char *title)
   if (p->system_flags & SAVEDFROGGED)
     p->flags |= FROGGED;
 
-  /* got to have someone here I'm afraid..  */
-
-  if (ishcadmin(p->lower_name))
+  /* Bootstrap hcadmins (no pfile) lose residency in the wipe above and
+     load_player has nothing to restore. Re-grant HCADMIN_INIT only if the
+     HC password challenge has already been passed this session. Saved
+     hcadmins keep their privs via their pfile's saved residency. */
+  if (ishcadmin(p->lower_name) && (p->flags & HC_AUTH))
   {
-
-    p->residency |= HCADMIN_INIT;	/* aha, lettem keep the privs they got */
-
+    p->residency |= HCADMIN_INIT;
     strcpy(p->ressied_by, "Hard Coded");
   }
 
@@ -1421,7 +1421,10 @@ void agree_disclaimer(player * p, char *str)
     p->system_flags |= AGREED_DISCLAIMER;
     if (p->saved)
       p->saved->system_flags |= AGREED_DISCLAIMER;
-    if (!ishcadmin(p->name))
+    /* Skip HC challenge if already authenticated this session: a saved
+       hcadmin reached this point via pfile auth, and a bootstrap hcadmin
+       reached it via the HC challenge in got_name (which sets HC_AUTH). */
+    if (!ishcadmin(p->name) || p->saved || (p->flags & HC_AUTH))
       link_to_program(p);
     else
       hcadmin_check_password(p);
@@ -2267,12 +2270,17 @@ void check_hcadmin_pw(player * p, char *str)
     /* alert the sus and admins on */
     SUWALL(" -=*> An attempt to login as %s was just made!!\n", p->name);
     LOGF("sufailpass", "someone failed to login as hcadmin %s from %s", p->name, get_address(p, NULL));
+    add_ip_fail(p->num_addr);
     quit(p, 0);
   }
   else
   {
+    p->flags |= HC_AUTH;
+    p->residency |= HCADMIN_INIT;
+    strcpy(p->ressied_by, "Hard Coded");
+    clear_ip_fail(p->num_addr);
     TELLPLAYER(p, "\nAccess accepted.\n");
-    link_to_program(p);
+    got_name(p, p->name);
   }
 }
 
@@ -2382,9 +2390,12 @@ void got_password(player * p, char *str)
       pg_log("connection", oldstack);
     stack = oldstack;
     p->flags |= NO_SAVE_LAST_ON;
+    add_ip_fail(p->num_addr);
     quit(p, "");
     return;
   }
+  clear_ip_fail(p->num_addr);
+
   /* prompt to upgrade legacy DES password to SHA-512 */
   if (p->password[0] && p->password[0] != '$')
   {
@@ -2508,6 +2519,32 @@ void got_name(player * p, char *str)
     iss = 1;
   *stack++ = 0;
   length++;
+
+  if (ishcadmin(oldstack) && !(p->flags & HC_AUTH))
+  {
+    char lname[MAX_NAME];
+    int i;
+
+    for (i = 0; oldstack[i] && i < MAX_NAME - 1; i++)
+      lname[i] = tolower((unsigned char) oldstack[i]);
+    lname[i] = '\0';
+
+    /* HC password challenge is only for unsaved hcadmins (bootstrap path).
+       Saved hcadmins authenticate via their pfile password. */
+    if (!find_saved_player(lname))
+    {
+      strncpy(p->name, oldstack, MAX_NAME - 1);
+      p->name[MAX_NAME - 1] = '\0';
+      strncpy(p->lower_name, lname, MAX_NAME - 1);
+      p->lower_name[MAX_NAME - 1] = '\0';
+
+      password_mode_on(p);
+      do_prompt(p, "\n\007 --- HARD-CODED ADMIN DETECTED ---\n Enter HC Password: ");
+      p->input_to_fn = check_hcadmin_pw;
+      stack = oldstack;
+      return;
+    }
+  }
 
   if (length > (MAX_NAME - 3))
   {
