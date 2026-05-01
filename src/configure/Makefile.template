@@ -13,7 +13,7 @@
 // All lines starting with // will not be included in the final Makefile
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-// 
+//
 #
 # PLAYGROUND PLUS MAKEFILE
 # (based around the replacement makefile for PG96 by Spire)
@@ -97,8 +97,8 @@ OS_SPECIFIC_LIBS	= *MF_LIBS*
 # The objects that need to be linked to make the TALKER executable ONLY.
 # These are automatically worked out by "make depend"
 
-include .Makefile_objects
-	  
+-include .Makefile_objects
+
 #
 # If you start editing stuff below here you better know what you are doing!
 # ==========================================================================
@@ -120,7 +120,7 @@ CFLAGS	+= -DDEBUG_VERBOSE
 endif
 else
 CFLAGS	= -O3 -Wall -Winline -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wnested-externs -Wno-cast-align
-LIBS	= 
+LIBS	=
 LDFLAGS	=
 endif
 
@@ -135,7 +135,7 @@ ifneq ($(wildcard include/autoconfig.h),include/autoconfig.h)
 default:        config
 install:        config
 quick:		config
-else   
+else
 default:        all
 install:        setup
 quick:		server
@@ -159,7 +159,7 @@ server:	$(TALKER)
 	@mv $(TALKER) $(BIN)/$(TALKER)
 	@chmod $(PERMS) $(BIN)/$(TALKER)
 	@echo "Made quick."
-	
+
 $(TALKER):	broadcast version $(OBJECTS) Makefile
 	@echo "Now linking ...... talk server"
 	@$(CC) $(LDFLAGS) -o $(TALKER) $(OBJECTS) $(LIBS)
@@ -180,12 +180,12 @@ version:
 	@echo "#define COMPILE_TIME \"`date`\"" > include/version.h
 	@echo "#define UNAME \"`uname`\"" >> include/version.h
 	@bash configure/get_dir
-	
+
 broadcast:
 	@echo ""
 	@echo "Using OS specific flags : $(OS_SPECIFIC_CFLAGS)"
 	@echo "Using additional libs   : $(LIBS) $(LDFLAGS)"
-        
+
 strip:
 	@echo "Now stripping .... $(TALKER) binary"
 	@strip $(TALKER)
@@ -242,4 +242,4 @@ depend:
 # Dependancies (automatically worked out by "make depend")
 #
 
-include .depend
+-include .depend
