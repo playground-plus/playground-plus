@@ -459,7 +459,6 @@ void init_socket(int port)
   struct sockaddr_in main_socket;
   int dummy = 1;
   char *oldstack;
-  char *hostname;
 
   oldstack = stack;
 
