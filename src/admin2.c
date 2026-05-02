@@ -83,10 +83,12 @@ void vlog(player * p, char *str)
   if (!*str || *str == '?')
   {
     dc = scandir("logs", &de, valid_log, alphasort);
-    if (!dc)
+    if (dc <= 0)
     {
       tell_player(p, " There are currently no log files ...\n");
-      if (de)
+      /* On scandir error (-1) `de` is undefined per POSIX; only free
+         when scandir actually succeeded with zero entries. */
+      if (dc == 0 && de)
 	free(de);
       return;
     }
@@ -236,11 +238,14 @@ void show_logs(player * p, char *str)
     compact++;
 
   dc = scandir("logs", &de, valid_log, alphasort);
-  if (!dc)
+  if (dc <= 0)
   {
     if (!compact)
       tell_player(p, " Log directory is empty ...\n");
-    if (de)
+    /* On scandir error (-1) `de` is undefined per POSIX and may be
+       non-NULL stack garbage; only free when scandir actually
+       succeeded with zero entries. */
+    if (dc == 0 && de)
       free(de);
     return;
   }
@@ -3744,10 +3749,12 @@ void vscript(player * p, char *str)
     else
       dc = scandir("logs/scripts", &de, valid_script, alphasort);
 
-    if (!dc)
+    if (dc <= 0)
     {
       tell_player(p, " There are currently no files in there ...\n");
-      if (de)
+      /* On scandir error (-1) `de` is undefined per POSIX; only free
+         when scandir actually succeeded with zero entries. */
+      if (dc == 0 && de)
 	free(de);
       return;
     }
