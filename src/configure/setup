@@ -195,3 +195,11 @@ fi
 
 touch .depend .Makefile_objects
 
+# Create runtime directories that the talker expects to exist. These
+# are populated at runtime (logs are written by pg_log, the reboot
+# state file is written under junk/rebooting), but the talker doesn't
+# create the parent directories itself — it just fails. Historically
+# these came in via the source tarball; on git-based installs they're
+# missing. Create them here so first install + first boot just works.
+mkdir -p ../logs ../logs/scripts ../logs/emergency ../junk/rebooting
+
