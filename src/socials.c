@@ -338,9 +338,11 @@ void init_socials(void)
   int dc = 0;
 
   dc = scandir("files/socials", &de, valid_social, alphasort);
-  if (!dc)
+  if (dc <= 0)
   {
-    if (de)
+    /* On scandir error (-1) `de` is undefined per POSIX; only free
+       when scandir actually succeeded with zero entries. */
+    if (dc == 0 && de)
       free(de);
     return;
   }
