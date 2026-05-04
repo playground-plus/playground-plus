@@ -41,6 +41,7 @@ Thumbs.db
 .secret/
 .clangd
 .clangd-format
+CLAUDE.md
 
 # Project-specific data
 junk
@@ -61,13 +62,18 @@ src/.depend
 src/.files
 src/.Makefile_objects
 
-# Compiled binaries
-bin/angel
-bin/ident_server
-bin/intercom
-bin/talker
+# Compiled binaries (match in src/ or bin/)
+angel
+ident_server
+intercom
+talker
 
 # Per-machine build config (defaults live in Configure.defaults)
 src/configure/.config
 src/configure/.config.h
+src/configure/.tmpconfig
+src/configure/.tmpconfig.h
+src/include/root.h
+src/include/autoconfig.h
+src/include/version.h
 src/configure/.config.old

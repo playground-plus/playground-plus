@@ -58,22 +58,13 @@ int mainsock;
 int open_main_socket(int port)
 {
   struct sockaddr_in sa;
-  char *hostname;
-  struct hostent *hp;
   int dummy = 1;
 
-  hostname = (char *) malloc(101);
   memset((char *) &sa, 0, sizeof(struct sockaddr_in));
-  gethostname(hostname, 100);
-
-  hp = gethostbyname(hostname);
-  if (hp == NULL)
-  {
-    fprintf(stderr, "Error: Host machine does not exist!\n");
-    return -1;
-  }
-
-  sa.sin_family = hp->h_addrtype;
+  sa.sin_family = AF_INET;
+  /* MACOS-FIX BEGIN: Use INADDR_ANY to bind to all interfaces instead of hostname resolution */
+  sa.sin_addr.s_addr = INADDR_ANY;
+  /* MACOS-FIX END */
   sa.sin_port = htons(port);
 
   if (-1 == (mainsock = socket(AF_INET, SOCK_STREAM, 0)))
