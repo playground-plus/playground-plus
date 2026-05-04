@@ -764,19 +764,23 @@ void backspace(player * p)
     p->ibuff_pointer--;
 }
 
-/* handle telnet control codes */
+/* handle telnet control codes — consume verb/option bytes from the
+   already-read input buffer rather than the socket fd, since the
+   bulk read in get_player_input has already drained the socket */
 
-void telnet_options(player * p)
+void telnet_options(player * p, unsigned char *buf, int len, int *pos)
 {
   unsigned char c;
 
-  if (read(p->fd, &c, 1) != 1)
+  if (*pos >= len)
     return;
+  c = buf[(*pos)++];
   switch (c)
   {
     case WONT:
-      if (read(p->fd, &c, 1) != 1)
+      if (*pos >= len)
 	return;
+      c = buf[(*pos)++];
       switch (c)
       {
 	case TELOPT_STATUS:
@@ -794,8 +798,9 @@ void telnet_options(player * p)
       quit(p, 0);
       break;
     case DO:
-      if (read(p->fd, &c, 1) != 1)
+      if (*pos >= len)
 	return;
+      c = buf[(*pos)++];
       switch (c)
       {
 	case TELOPT_ECHO:
@@ -812,8 +817,9 @@ void telnet_options(player * p)
       }
       break;
     case DONT:
-      if (read(p->fd, &c, 1) != 1)
+      if (*pos >= len)
 	return;
+      c = buf[(*pos)++];
       switch (c)
       {
 	case TELOPT_ECHO:
@@ -837,7 +843,8 @@ void telnet_options(player * p)
 void get_player_input(player * p)
 {
   int chars_ready = 0;
-  char *oldstack, c;
+  char *oldstack;
+  unsigned char c;
 
   oldstack = stack;
 
@@ -884,10 +891,11 @@ void get_player_input(player * p)
       c = readbuf[i];
       switch (c)
       {
-	case -1:
+	case 0xFF:	/* IAC */
 	  p->flags &= ~(LAST_CHAR_WAS_R | LAST_CHAR_WAS_N);
-	  telnet_options(p);
-	  return;
+	  i++;
+	  telnet_options(p, (unsigned char *)readbuf, nread, &i);
+	  i--;
 	  break;
 	case '\n':
 	  if (!(p->flags & LAST_CHAR_WAS_R))
@@ -913,7 +921,7 @@ void get_player_input(player * p)
 	  break;
 	default:
 	  p->flags &= ~(LAST_CHAR_WAS_R | LAST_CHAR_WAS_N);
-	  if (c == 8 || c == 127 || c == -9)
+	  if (c == 8 || c == 127 || c == 0xF7)	/* ^H, DEL, IAC EC */
 	  {
 	    backspace(p);
 	    break;

@@ -53,6 +53,7 @@ files/notes
 files/players
 files/rooms
 files/stats_info
+files/intercom.dbase
 
 # Platform-specific build config
 src/configure/makefiles/Darwin

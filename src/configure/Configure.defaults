@@ -1,55 +1,54 @@
-/*
- * Playground+ 1.0 Configuration File
- * Don't edit unless you know what you are doing
- */
-#define PG_VERSION "1.0" 
+#
+# Playground Plus default configuration values.
+#
+# Read by configure/Configure (via sed + bash source) on first install
+# to populate prompt defaults. Once the operator has answered the
+# questions once, configure/.config takes precedence and this file is
+# ignored on subsequent runs.
+#
+# Format rules:
+#   - Lines must be valid sh syntax (the file is sourced by bash).
+#   - Use `KEY=y` to enable a boolean option.
+#   - Use `# KEY is not set` to disable; the script's sed pass converts
+#     this to `KEY=n` before sourcing.
+#   - Use `KEY=integer` for numeric options.
+#   - Lines starting with `#` (other than the "is not set" form) are
+#     treated as comments and ignored.
+#
+# Per-host concerns (operating system, install path, talker name, port,
+# HC password, etc.) are NOT set here — they're either auto-detected
+# by configure/setup and configure/get_dir, or live in soft/config.msg.
+#
+# Note that conditional options (MAX_CRASH, INTELLIBOTS, LAST_SHOW)
+# only appear in the menu when their parent option is enabled, but
+# their defaults are included here so that toggling the parent picks
+# up a sensible value.
+#
 
-/*
- * Playground+ v1.0 Configuration Options
- */
+#
+# Additional code options
+#
+INTERCOM=y
+ANTICRASH=y
+MAX_CRASH=3
+AUTOSHUTDOWN=y
+ROBOTS=y
+INTELLIBOTS=n
+LAST=y
+LAST_SHOW=20
+COMMAND_STATS=y
+NEWPAGER=y
+SEAMLESS_REBOOT=y
+COM_MATCH=y
+IDENT=y
+SUH_NUM=20
+NEW_RES_CODE=y
+ALLOW_MULTIS=y
+HC_CHANNEL=y
+NEW_RECONNECT=y
 
-/*
- * Machine Options
- */
-#define LINUX 1
-#undef  HPUX
-#undef  SOLARIS
-#undef  SUNOS
-#undef  ULTRIX
-#define ROOT "/home/pgplus/talker/"
-#define SOCKET_PATH "/junk/alive_socket"
-
-/*
- * Server Options
- */
-#define TALKER_NAME "Playground+"
-#define DEFAULT_PORT (5555)
-#define HC_PASSWORD "silly+rabbit"
-
-/*
- * Timing options
- */
-#define BACKUP_TIME (4000)
-#define NEWS_TIMEOUT (1814400)
-#define MAIL_TIMEOUT (1814400)
-#define TIMER_CLICK (5)
-#define VIRTUAL_CLICK (10000)
-#define SYNC_TIME (60)
-#define NOTE_SYNC_TIME (1800)
-
-/*
- * Player and code options
- */
-#define TERM_LINES (16)
-#define NAME_MAX_IN_PIPE (10)
-#define YOU_MAX_IN_PIPE (3)
-#define MAX_RES (1048576)
-
-/*
- * System options
- */
-#define STACK_SIZE (500001)
-#define MAX_LOG_SIZE (5000)
-#define HASH_SIZE (64)
-#define NOTE_HASH_SIZE (40)
-#undef  MALLOC_DEBUG
+#
+# Timing options (seconds; 1814400 = 3 weeks)
+#
+NEWS_TIMEOUT=1814400
+MAIL_TIMEOUT=1814400
