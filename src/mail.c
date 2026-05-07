@@ -778,10 +778,11 @@ void reconfigure_received_list(saved_player * sp)
 {
   int count = 0;
   int *scan;
-  char *oldstack;
+  char *oldstack, *data_start;
   oldstack = stack;
 
   align(stack);
+  data_start = stack;
   scan = sp->mail_received;
   if (!scan)
     return;
@@ -804,7 +805,7 @@ void reconfigure_received_list(saved_player * sp)
     stack += sizeof(int);
     count++;
     sp->mail_received = (int *) MALLOC(count * sizeof(int));
-    memcpy(sp->mail_received, oldstack, count * sizeof(int));
+    memcpy(sp->mail_received, data_start, count * sizeof(int));
   }
   else
     sp->mail_received = 0;
