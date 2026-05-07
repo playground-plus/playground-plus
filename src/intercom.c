@@ -2489,7 +2489,7 @@ static void create_inet_socket (char *str)
 {
   struct sockaddr_in main_socket;
   int dummy = 0;
-  char hostname[101], *oldstack;
+  char *oldstack;
   talker_list *scan;
   int local_errno;
   struct linger lingerval;
@@ -2515,21 +2515,10 @@ static void create_inet_socket (char *str)
   }
   /*We have a portnumber and its over 0 */
   memset(&main_socket, 0, sizeof(struct sockaddr_in));
-  gethostname (hostname, 100);
-
-  {
-    struct addrinfo hints, *res;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    if (getaddrinfo(hostname, NULL, &hints, &res) != 0 || !res)
-    {
-        icom_log ("intercom", "Host machine does not exist");
-      return;
-    }
-    freeaddrinfo(res);
-  }
   main_socket.sin_family = AF_INET;
+  /* MACOS-FIX BEGIN: Use INADDR_ANY to bind to all interfaces instead of hostname resolution */
+  main_socket.sin_addr.s_addr = INADDR_ANY;
+  /* MACOS-FIX END */
   main_socket.sin_port = htons (portnumber);
   /*Add 1 to portnumber, as this will now refer to the main talkers port */
   portnumber++;

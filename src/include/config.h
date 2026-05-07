@@ -87,4 +87,4 @@
    from http://pgplus.ewtoo.org
 */
 
-#define PG_VERSION "1.0.11"
+#define PG_VERSION "2026.2.0"

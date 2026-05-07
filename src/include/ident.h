@@ -84,13 +84,13 @@
  #endif /* GLIBC >= 2 */
 #endif /* __linux__ */
 
-#if defined(__FreeBSD__) || defined(__NetBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
  #define SIGTYPE int i
  #define USE_SIGACTION
  #define USE_SIGEMPTYSET
  #define HAVE_UNISTDH
  #define HAVE_BZERO
-#endif /* __FreeBSD__ || __NetBSD__ */
+#endif /* __FreeBSD__ || __NetBSD__ || __APPLE__ */
 
 /* Toggle debug mode */
 #if defined(RESORT)

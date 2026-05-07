@@ -127,17 +127,19 @@ echo -n " crypt.."
 # slackware boxes)
 libs=""
 cat > temp.c << *END*
+#include <unistd.h>
 #include <time.h>
-void main(void)
+int main(void)
 {
   timelocal(0);
   crypt(0,0);
+  return 0;
 }
 *END*
-gcc temp.c -o temp.exe 2>temp.output
-if [ -n "`grep "crypt" temp.output`" ]
-then
-  libs="-lcrypt"
+if ! gcc temp.c -o temp.exe > temp.output 2>&1; then
+  if gcc temp.c -lcrypt -o temp.exe >> temp.output 2>&1; then
+    libs="-lcrypt"
+  fi
 fi
 if [ -n "`grep "timelocal" temp.output`" ]
 then
@@ -191,5 +193,13 @@ then
   read response
 fi
 
-touch .depend
+touch .depend .Makefile_objects
+
+# Create runtime directories that the talker expects to exist. These
+# are populated at runtime (logs are written by pg_log, the reboot
+# state file is written under junk/rebooting), but the talker doesn't
+# create the parent directories itself — it just fails. Historically
+# these came in via the source tarball; on git-based installs they're
+# missing. Create them here so first install + first boot just works.
+mkdir -p ../logs ../logs/scripts ../logs/emergency ../junk/rebooting
 

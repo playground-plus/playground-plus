@@ -8,27 +8,50 @@
  ║     ██║     ╚██████╔╝██║     ███████╗╚██████╔╝███████║       ║
  ║     ╚═╝      ╚═════╝ ╚═╝     ╚══════╝ ╚═════╝ ╚══════╝       ║
  ║                                                              ║
- ║            v2026.1.0 - by Tony Mattke aka tonhE              ║
+ ║            v2026.1.1 - by Tony Mattke aka tonhE              ║
  ║                                                              ║
  ╚══════════════════════════════════════════════════════════════╝
 ```
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2026.1.0-blue?style=flat-square" alt="Version 2026.1.0" />
+  <img src="https://img.shields.io/badge/version-2026.1.1-blue?style=flat-square" alt="Version 2026.1.1" />
   <img src="https://img.shields.io/badge/GCC-10%2B-green?style=flat-square" alt="GCC 10+" />
   <img src="https://img.shields.io/badge/platform-Linux%20x86__64-lightgrey?style=flat-square" alt="Linux x86_64" />
   <img src="https://img.shields.io/badge/warnings-0-brightgreen?style=flat-square" alt="Zero Warnings" />
 </p>
 
-# Playground Plus v2026.1.0
+# Playground Plus v2026.1.1
 
 > [!NOTE]
 > This repository is not an official repository maintained by the original Playground+ developers. It is a community effort to modernize and preserve the PG+ codebase. The companion [playground-plus-patches](https://github.com/playground-plus/playground-plus-patches) repository is also unofficial.
+
+> [!CAUTION]
+> **Security bulletin — HCAdmin login flow**
+>
+> Two vulnerabilities affect talkers with HCAdmin names defined in `config.msg` that lack active pfiles:
+>
+> - **Unlimited password attempts** against the HC password challenge — no rate limiting or lockout.
+> - **HCAdmin privileges granted before password verification** — connecting clients are momentarily treated as HCAdmin before `check_hcadmin_pw` runs.
+>
+> Both are fixed in v2026.1.1. Operators running prior or modified PG+ codebases should review the writeup and apply the patches: **[playground-plus#2](https://github.com/playground-plus/playground-plus/issues/2)**.
 
 **The classic talker server, modernized for 2026.**
 
 Playground Plus is a multi-user chat server ("talker") with a rich history stretching back to the early 1990s. Originally built on the EW-Too codebase, it evolved through Summink and Playground 96 into Playground+, which became one of the most widely deployed talker platforms of its era.
 
 This release brings PG+ into the modern age. It builds cleanly on current 64-bit Linux systems with zero errors and zero warnings, fixes critical security vulnerabilities, and replaces deprecated system APIs - all while preserving the talker experience that operators and users know.
+
+---
+
+## What's New in v2026.1.1
+
+**Released 30th April 2026**
+
+### Security Fixes
+
+- **HCAdmin login flow hardened** — see the [security bulletin](#playground-plus-v202611) above and [playground-plus#2](https://github.com/playground-plus/playground-plus/issues/2) for full details. Three changes:
+  - HC password challenge now fires only when the named hcadmin has no pfile (saved hcadmins authenticate via their pfile password as expected).
+  - HCAdmin privileges (`HCADMIN_INIT`, `ressied_by`) are now granted only after a successful HC password match, gated on a new `HC_AUTH` session flag — never on name match alone.
+  - Per-IP failure tracking with a 10-minute lockout after 5 failed HC password attempts (`add_ip_fail` / `is_ip_locked` in `socket.c`); enforced at connection accept.
 
 ---
 
@@ -102,7 +125,7 @@ make install      # builds all four binaries
 
 ## Applying Patches to Modified Talkers
 
-If you're running a customized PG+ talker, see the companion [playground-plus-patches](https://github.com/playground-plus/playground-plus-patches) repository which provides the same fixes as modular, per-category patches designed to apply cleanly to modified codebases. Tag `v2026.1.0` in the patches repository corresponds to this release.
+If you're running a customized PG+ talker, see the companion [playground-plus-patches](https://github.com/playground-plus/playground-plus-patches) repository which provides the same fixes as modular, per-category patches designed to apply cleanly to modified codebases. Tag `v2026.1.1` in the patches repository corresponds to this release.
 
 ---
 
@@ -145,11 +168,11 @@ Playground+ 2026.1.0      Tony Mattke (tonhe)
 
 ## Credits
 
-### Playground Plus 
+### Playground Plus
 
 **Silver** (Richard Lawrence), **phypor** (J. Bradley Christian), and **blimey** (Geoffrey Swift) - the authors of Playground Plus, a stable, bug-fixed, and improved version of Playground 96 with a wealth of additional features.
 
-Sadly development stopped in 1998 at the height of talker population. 
+Sadly development stopped in 1998 at the height of talker population.
 
 ### Playground 96
 
