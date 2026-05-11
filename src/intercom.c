@@ -2038,6 +2038,27 @@ static void parse_remote_talker_input (talker_list * remote_talker, int validate
   if (!parse_ok)
     return;
 
+  {
+    int total_len = 0;
+    packet *scan = remote_talker->packet_anchor;
+    while (scan) {
+      total_len += scan->length;
+      scan = scan->next;
+    }
+    if (total_len >= INTERCOM_STACK) {
+      char logbuf[128];
+      snprintf(logbuf, sizeof(logbuf),
+               "Oversized message from %s (%d bytes), disconnecting",
+               remote_talker->name, total_len);
+      icom_log("intercom", logbuf);
+      free_talker_packets(remote_talker);
+      I_SHUTDOWN(remote_talker->fd, 2);
+      do_close(remote_talker);
+      stack = oldstack;
+      return;
+    }
+  }
+
   this_packet = remote_talker->packet_anchor;
   this_packet->data[this_packet->length] = '\0';
   memcpy(oldstack, this_packet->data, this_packet->length + 1);
@@ -4695,6 +4716,25 @@ static void parse_talker_input (void)
 
   if (!parse_ok)
     return;
+
+  {
+    int total_len = 0;
+    packet *scan = talker_packet_anchor;
+    while (scan) {
+      total_len += scan->length;
+      scan = scan->next;
+    }
+    if (total_len >= INTERCOM_STACK) {
+      char logbuf[80];
+      snprintf(logbuf, sizeof(logbuf),
+               "Oversized message from talker (%d bytes), discarding",
+               total_len);
+      icom_log("intercom", logbuf);
+      free_list_packets();
+      stack = oldstack;
+      return;
+    }
+  }
 
   this_packet = talker_packet_anchor;
   this_packet->data[this_packet->length] = '\0';
